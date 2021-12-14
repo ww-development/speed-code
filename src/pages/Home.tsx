@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useDatabase } from "../contexts/DatabaseContext";
-import Editor from "./Editor"
 
 export default function Home() {
     const [error, setError] = useState("");
@@ -19,33 +19,31 @@ export default function Home() {
     }
 
     return (
-        <Editor />
+        <div>
+            <h1>Home</h1>
+    
+            { error && <p>Error</p> }
+    
+            { currentUser && 
+                <div>
+                    <p>{ currentUser.email }</p>
+                    <p>{ currentUser.uid }</p>
+                </div>
+            }
+    
+            {
+                programs && programs.map(program => {
+                    return <div>
+                        <p>{program.language}</p>
+                        <p>{program.code}</p>
+                    </div>
+                })
+            }
+
+            <Link to="/editor">Editor</Link><br />
+    
+            <button onClick={handleLogout}>Logout</button>
+        </div>
     )
     
 }
-
-// return (
-//     <div>
-//         <h1>Home</h1>
-
-//         { error && <p>Error</p> }
-
-//         { currentUser && 
-//             <div>
-//                 <p>{ currentUser.email }</p>
-//                 <p>{ currentUser.uid }</p>
-//             </div>
-//         }
-
-//         {
-//             programs && programs.map(program => {
-//                 return <div>
-//                     <p>{program.language}</p>
-//                     <p>{program.code}</p>
-//                 </div>
-//             })
-//         }
-
-//         <button onClick={handleLogout}>Logout</button>
-//     </div>
-// )

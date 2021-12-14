@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Space+Mono&display=swap');
+
+
+
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Poppins';
+  height: 100%;
+  
+  --topbar-height: 100px;
+  --primary: white;
+  --dark-purple: rgba(90,0,94,1);
+  --dark-blue: rgba(30,78,126,1);
+  --light-blue: rgba(0,212,255,1);
+  --dark-background: rgb(19, 41, 63);
+  --darker-background: rgb(37, 40, 43);
+  --gradient: linear-gradient(90deg, var(--dark-purple) 0%, var(--dark-blue) 47%, var(--light-blue) 100%);
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+p {
+  white-space: pre-line;
+}
+
+#topbar {
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  background-color: var(--dark-background);
+  color: var(--primary);
+  height: var(--topbar-height);
+}
+
+.center {
+  text-align: center;
+}
+
+#topbar div {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#topbar button {
+  position: absolute;
+  right: 1rem;
+}
+
+.mono {
+  text-transform: uppercase;
+  /* font-weight: bold; */
+  font-family: 'Space Mono';
+}
+
+button {
+  background: var(--gradient);
+  border: none;
+  padding: 1rem;
+  border-radius: 10px;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+
+#console {
+  background-color: var(--darker-background);
+  color: var(--primary);
+  padding-left: 1rem;
+  font-family: "Space Mono";
+  flex-grow: 1;
+  overflow: scroll;
+  overflow-x: hidden;
+}
+
+
+.resizable {
+  overflow: hidden;
+  resize: vertical;
+  height: 400px;
+  width: auto;
+  background: var(--gradient);
+  padding-bottom: 10px;
+}

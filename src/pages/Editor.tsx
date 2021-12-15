@@ -1,6 +1,7 @@
 import AceEditor from "react-ace";
 import ReactResizeDetector from "react-resize-detector";
 import React from "react";
+import io from "socket.io-client";
 
 import "./Editor.css";
 
@@ -8,10 +9,11 @@ import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-monokai";
 
 interface IEditorState {
-    editorHeight: any;
-    editorWidth: any;
-    code: string;
-    response: string;
+  editorHeight: any;
+  editorWidth: any;
+  code: string;
+  response: string;
+  socket: any;
 }
 
 export default class Editor extends React.Component<any, IEditorState> {
@@ -19,13 +21,28 @@ export default class Editor extends React.Component<any, IEditorState> {
     super(props);
     this.state = {
       editorHeight: 400,
-      editorWidth: "100vw",
+      editorWidth: 0,
       code: "",
       response: "",
+      socket: undefined,
     };
 
     this.onChange = this.onChange.bind(this);
     this.onResize = this.onResize.bind(this);
+    this.setResult = this.setResult.bind(this);
+  }
+
+  componentDidMount() {
+    const newSocket = io("http://localhost:3000");
+    this.setState({ socket: newSocket });
+
+    newSocket.on("result", this.setResult);
+
+    return () => newSocket.close();
+  }
+
+  setResult(response: string) {
+    this.setState({ response });
   }
 
   onResize(w: number | undefined, h: number | undefined) {
@@ -37,45 +54,33 @@ export default class Editor extends React.Component<any, IEditorState> {
 
   onChange(newValue: string) {
     this.setState({ code: newValue });
-    // console.log(newValue);
   }
 
   runCode() {
-    fetch(
-      "http://10.0.219.34:3000?" +
-        new URLSearchParams({
-          code: this.state.code,
-        })
-    )
-      .then((response) => response.text())
-      .then((response) => {
-        this.setState({ response: response });
-      });
+    this.state.socket.emit("work", this.state.code);
   }
 
   render() {
     return (
       <div>
-
         <div className="wrapper">
+          <div id="topbar">
+            <h2>SpeedCode</h2>
 
-        <div id="topbar">
-          <h2>SpeedCode</h2>
+            <div className="center">
+              <h3>Fast Primes</h3>
+              <p>Last saved three minutes ago.</p>
+            </div>
 
-          <div className="center">
-            <h3>Fast Primes</h3>
-            <p>Last saved three minutes ago.</p>
+            <button
+              className="mono"
+              onClick={() => {
+                this.runCode();
+              }}
+            >
+              Run code
+            </button>
           </div>
-
-          <button
-            className="mono"
-            onClick={() => {
-              this.runCode();
-            }}
-          >
-            Run code
-          </button>
-        </div>
 
           <div className="resizable">
             <ReactResizeDetector
@@ -85,7 +90,7 @@ export default class Editor extends React.Component<any, IEditorState> {
             />
             <AceEditor
               height={this.state.editorHeight}
-              width={this.state.editorWidth}
+              width={"100vw"}
               placeholder="Write code here."
               mode="python"
               theme="monokai"
@@ -95,11 +100,15 @@ export default class Editor extends React.Component<any, IEditorState> {
               showPrintMargin={true}
               showGutter={true}
               highlightActiveLine={true}
-              
             />
           </div>
 
-          <div id="console" style={{"height": "calc(100vh - " + (this.state.editorHeight + 100) + "px)"}}>
+          <div
+            id="console"
+            style={{
+              height: "calc(100vh - " + (this.state.editorHeight + 100) + "px)",
+            }}
+          >
             <h3>Console Output:</h3>
             <p>{this.state.response}</p>
           </div>

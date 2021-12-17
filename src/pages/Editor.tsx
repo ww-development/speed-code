@@ -1,119 +1,129 @@
+import { useEffect, useState } from "react";
 import AceEditor from "react-ace";
+import { useLocation } from "react-router-dom";
 import ReactResizeDetector from "react-resize-detector";
-import React from "react";
 import io from "socket.io-client";
+import { useDatabase } from "../contexts/DatabaseContext";
+import { IProgram } from "../contexts/DatabaseContext";
 
-import "./Editor.css";
-
+// import "./Editor.css";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-monokai";
 
-interface IEditorState {
-  editorHeight: any;
-  editorWidth: any;
-  code: string;
-  response: string;
-  socket: any;
-}
+export default function Editor() {
+    const { programs, loading, createProgram, updateProgramCode } = useDatabase();
 
-export default class Editor extends React.Component<any, IEditorState> {
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      editorHeight: 400,
-      editorWidth: 0,
-      code: "",
-      response: "",
-      socket: undefined,
-    };
+    const [socket, setSocket] = useState<any>(null);
+    const [response, setResponse] = useState("");
+    const [code, setCode] = useState("");
+    const [program, setProgram] = useState<IProgram | null>(null);
+    const [editorWidth, setEditorWidth] = useState<number | undefined>(0);
+    const [editorHeight, setEditorHeight] = useState<number | undefined>(400);
 
-    this.onChange = this.onChange.bind(this);
-    this.onResize = this.onResize.bind(this);
-    this.setResult = this.setResult.bind(this);
-  }
+    const location = useLocation();
+    const { problemID } = location.state;
 
-  componentDidMount() {
-    const newSocket = io("http://localhost:3000");
-    this.setState({ socket: newSocket });
+    useEffect(() => {
+        const getProgram = async () => {
+            if (!loading) {
+                let filteredPrograms = programs!.filter((p) => {
+                    return p.problemID === problemID;
+                });
+    
+                if (filteredPrograms.length === 0) {
+                    let programID = await createProgram(problemID);
+                    setProgram(programs!.filter((p) => {
+                        return p.id === programID;
+                    })[0]);
+                } else {
+                    setProgram(filteredPrograms[0])
+                }
+            }
+        }
 
-    newSocket.on("result", this.setResult);
+        getProgram();
+    }, [loading])
 
-    return () => newSocket.close();
-  }
+    // useEffect(() => {
+    //     const newSocket = io("http://10.0.219.34:3000");
+    //     setSocket(newSocket);
+    //     newSocket.on("result", (res) => {
+    //         setResponse(res);
+    //     })
 
-  setResult(response: string) {
-    this.setState({ response });
-  }
+    //     return function cleanup() {
+    //         newSocket.close()
+    //     }
+    // }, []);
 
-  onResize(w: number | undefined, h: number | undefined) {
-    this.setState({
-      editorHeight: h,
-      editorWidth: w,
-    });
-  }
+    function runCode() {
+        socket.emit("work", code);
+    }
 
-  onChange(newValue: string) {
-    this.setState({ code: newValue });
-  }
+    function onResize(w: number | undefined, h: number | undefined) {
+        setEditorHeight(h);
+        setEditorWidth(w);
+    }
 
-  runCode() {
-    this.state.socket.emit("work", this.state.code);
-  }
+    function onChange(newValue: string) {
+        setProgram({
+            ...program!,
+            code: newValue
+        });
+    }
 
-  render() {
-    return (
-      <div>
-        <div className="wrapper">
-          <div id="topbar">
-            <h2>SpeedCode</h2>
+    async function onSave() {
+        await updateProgramCode(program!.id, program!.code);
+    }
 
-            <div className="center">
-              <h3>Fast Primes</h3>
-              <p>Last saved three minutes ago.</p>
+    if (program !== null) {
+        return (
+            <div>
+                <div className="wrapper">
+                    <div id="topbar">
+                        <h2>SpeedCode</h2>
+    
+                        <div className="center">
+                            <h3>Fast Primes</h3>
+                            <p>Last saved three minutes ago.</p>
+                        </div>
+    
+                        <button
+                            className="mono" onClick={runCode}>
+                            Run Code
+                        </button>
+
+                        <button onClick={onSave}>
+                            Save Code
+                        </button>
+                    </div>
+    
+                    <div className="resizable">
+                        <ReactResizeDetector handleWidth handleHeight onResize={onResize} />
+                        <AceEditor
+                            height={editorHeight!.toString() + "px"}
+                            width={"100vw"}
+                            placeholder={problemID}
+                            mode="python"
+                            theme="monokai"
+                            name="editor"
+                            onChange={onChange}
+                            fontSize={18}
+                            showPrintMargin={true}
+                            showGutter={true}
+                            highlightActiveLine={true}
+                            value={program && program.code}
+                        />
+                    </div>
+    
+                    <div id="console" style={{height: "calc(100vh - " + (editorHeight! + 100) + "px)",}}>
+                        <h3>Console output:</h3>
+                        <p>{response}</p>
+                    </div>
+                </div>
             </div>
-
-            <button
-              className="mono"
-              onClick={() => {
-                this.runCode();
-              }}
-            >
-              Run code
-            </button>
-          </div>
-
-          <div className="resizable">
-            <ReactResizeDetector
-              handleWidth
-              handleHeight
-              onResize={this.onResize}
-            />
-            <AceEditor
-              height={this.state.editorHeight}
-              width={"100vw"}
-              placeholder="Write code here."
-              mode="python"
-              theme="monokai"
-              name="editor"
-              onChange={this.onChange}
-              fontSize={18}
-              showPrintMargin={true}
-              showGutter={true}
-              highlightActiveLine={true}
-            />
-          </div>
-
-          <div
-            id="console"
-            style={{
-              height: "calc(100vh - " + (this.state.editorHeight + 100) + "px)",
-            }}
-          >
-            <h3>Console Output:</h3>
-            <p>{this.state.response}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+        )
+    } else {
+        return <></>
+    }
 }

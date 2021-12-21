@@ -2,7 +2,9 @@ import io from 'socket.io-client';
 let socket:any;
 
 export const initiateSocket = () => {
-  socket = io('http://localhost:3000');
+  socket = io('http://192.168.0.135:80', {
+    withCredentials: true 
+  });
 }
 
 export const disconnectSocket = () => {

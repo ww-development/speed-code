@@ -19,9 +19,16 @@ interface IProblem {
     solvedBy: number;
 }
 
+interface IUserData {
+    firstName: string;
+    familyName: string;
+    topProblem: number;
+}
+
 interface IDatabaseContext {
     programs: IProgram[] | null;
     problems: IProblem[] | null;
+    userData: IUserData | null;
     loading: Boolean;
     createProgram: (problemID: string) => Promise<string | undefined>;
     updateProgramCode: (programID: string, newCode: string) => Promise<void>;
@@ -37,6 +44,7 @@ export function DatabaseProvider({ children }: { children: any }) {
     const [programs, setPrograms] = useState<IProgram[]>([]);
     const [problems, setProblems] = useState<IProblem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userData, setUserData] = useState<IUserData | null>(null);
     const { currentUser } = useAuth();
 
     // Programs:
@@ -60,9 +68,15 @@ export function DatabaseProvider({ children }: { children: any }) {
         }
     }, [currentUser]);
 
-    // Problems:
+    // User Data and Problems:
     useEffect(() => {
         if (currentUser !== null) {
+            const userDataRef = doc(database, "users", currentUser.uid);
+            const unsubscribeUser = onSnapshot(userDataRef, (querySnapshot) => {
+                const incomingUserData = querySnapshot.data() as IUserData;
+                setUserData(incomingUserData);
+            })
+
             const problemsRef = query(collection(database, "problems"));
             const unsubscribe = onSnapshot(problemsRef, (querySnapshot) => {
                 let incomingProblems:IProblem[] = [];
@@ -109,6 +123,7 @@ export function DatabaseProvider({ children }: { children: any }) {
     const value: IDatabaseContext = {
         programs,
         problems,
+        userData,
         loading,
         createProgram,
         updateProgramCode
